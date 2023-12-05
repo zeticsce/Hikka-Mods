@@ -20,6 +20,8 @@ import logging
 import re
 import requests
 
+from dataclasses import dataclass
+
 import typing
 
 
@@ -172,6 +174,7 @@ class Lab():
         self.virus_chat: int
         self.coins: int
         self.bio_valuta: int
+
     def __str__(self):
         return format_dir(self.__dict__)
 
@@ -182,43 +185,61 @@ class Lab():
         return format_dir(self.__dict__)
 
 
+class InvalidConfig(Exception):
+    pass
+
+
+@dataclass
+class types:
+    Lab = Lab
+    User = User
+    Victim = Victim
+    Victims = Victims
+
+
+@dataclass
+class errors:
+    VictimsException = VictimsException
+    UserException = UserException
+    LabException = LabException
+    InvalidToken = InvalidToken
+    InvalidConfig = InvalidConfig
+
+
 class BioAttackerLib(loader.Library):
+    developer = '@zet1csce_bot'
+    # version = (1, 1, 0)
+
+
     def __init__(self):
-        self.__user_id = None
-        self.__key = None
-        self._url = None
-
-        token_reg = re.compile(pat := r"([0-9]+):([0-9a-zA-Z]+)", re.ASCII)
-
-        def on_change_cfg():
-            if token := self.config['bio_token']:
-                self.__user_id, self.__key = token_reg.fullmatch(token).groups()
-
-            self._url = self.config.get('api_url')
-
         self.config = loader.LibraryConfig(
             loader.ConfigValue(
                 'bio_token',
                 None,
                 'Токен биочма',
-                validator=loader.validators.Hidden(loader.validators.RegExp(pat)),
-                on_change=on_change_cfg
+                validator=loader.validators.Hidden(
+                    loader.validators.RegExp(r"([0-9]+):([0-9a-zA-Z]+)")
+                ),
             ),
             loader.ConfigValue(
                 'api_url',
                 None,
                 validator=loader.validators.Hidden(loader.validators.Link()),
-                on_change=on_change_cfg
             )
         )
-
-        on_change_cfg()
+        self.types = types
+        self.errors = errors
 
 
     @property
     def _token(self):
         return self.config['bio_token']
     
+
+    @property
+    def _url(self):
+        return self.config['api_url']
+
 
     @staticmethod
     def _get_user(text) -> str:
@@ -228,6 +249,9 @@ class BioAttackerLib(loader.Library):
 
 
     async def _req(self, params: dict = {}, **kw) -> requests.Response:
+        if not all(self.config.values()):
+            raise InvalidConfigError('Not specified bio_token or api_url')
+
         response = await run_sync(
             requests.post,
             self._url,
@@ -244,6 +268,9 @@ class BioAttackerLib(loader.Library):
             dict_result = response.json()
         except Exception:
             dict_result = {}
+
+        if dict_result.get('key') == 'err:invalidToken':
+            raise InvalidToken()
 
         return response, dict_result
     
@@ -268,7 +295,10 @@ class BioAttackerLib(loader.Library):
         self,
         start_end: typing.Tuple[int, int] = (-1, -50),
         full_user: typing.Optional[bool] = False
-    ) -> typing.Union[Victims, VictimsException]:
+    ) -> typing.Union[
+        Victims,
+        VictimsException
+    ]:
         _, result = await self._req(
             method='getVictims',
             range=f'{start_end[0]}:{start_end[1]}',
@@ -281,7 +311,15 @@ class BioAttackerLib(loader.Library):
             raise VictimsException(result)
 
 
-    async def get_victim(self, user: typing.Any = None):
+    async def get_victim(
+        self,
+        user: typing.Any = None
+    ) -> typing.Optional[
+        typing.Union[
+            Victim,
+            VictimsException
+        ]
+    ]:
         _, result = await self._req(
             method='getVictims',
             user=self._get_user(user or self.tg_id)
