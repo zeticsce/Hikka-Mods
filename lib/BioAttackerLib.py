@@ -185,7 +185,7 @@ class Lab():
         return format_dir(self.__dict__)
 
 
-class InvalidConfig(Exception):
+class InvalidConfigError(Exception):
     pass
 
 
@@ -203,7 +203,7 @@ class errors:
     UserException = UserException
     LabException = LabException
     InvalidToken = InvalidToken
-    InvalidConfig = InvalidConfig
+    InvalidConfigError = InvalidConfigError
 
 
 class BioAttackerLib(loader.Library):

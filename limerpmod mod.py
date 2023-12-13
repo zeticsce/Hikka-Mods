@@ -776,7 +776,7 @@ To add chat use without reply and args."""
             if command[1]:
                 rp_message_send += command[1] + " | "
 
-            rp_message_send += f"<a href=tg://user?id={me.id}>{nick}</a> {s1[0]}{command[0]}{s1[1]} " \
+            rp_message_send += f"<a href=tg://user?id={me_id}>{nick}</a> {s1[0]}{command[0]}{s1[1]} " \
                                f"<a href=tg://user?id={user.id}>{user_first_name}</a>{detail[1]}"
 
             if len(lines) >= 2:
