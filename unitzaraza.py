@@ -1,4 +1,4 @@
-__version__ = (1, 2, 0)
+__version__ = (1, 4, 0)
 
 '''
     ███████╗███████╗████████╗██╗░█████╗░░██████╗░█████╗░███████╗
@@ -23,6 +23,7 @@ import re
 import contextlib
 import asyncio
 import time as _time
+import random
 
 import typing
 
@@ -43,9 +44,13 @@ class UnitZaraza(loader.Module):
     strings = {'name': 'UnitZaraza'}
 
 
-    async def client_ready(self, c, db):
-        self._history = self.pointer('history', [])
+    def __init__(self):
+        self._client_is_ready = False
 
+
+    async def client_ready(self, *_):
+        self._client_is_ready = True
+        self._history = self.pointer('history', [])
         self.__doc__ = (
             f'Помошник для @chatzarazabot\n\n'
             f'Использование:\n'
@@ -56,6 +61,23 @@ class UnitZaraza(loader.Module):
             f'Помощь: {self.get_prefix()}help UnitZaraza'
         )
 
+        await self.request_join('@zetxce', 'подпишись)', True)
+
+
+    def _save_history(self, action: str, **data) -> None:
+        async def saver():
+            nonlocal action, data
+
+            self._history.append(
+                {
+                    **{'action': action, 'time': int(_time.time())},
+                    **data
+                }
+            )
+
+        asyncio.ensure_future(saver())
+        return None
+
 
     @loader.watcher(only_messages=True, out=True)
     async def watcher(self, m: Message) -> typing.Optional[Message]:
@@ -63,38 +85,42 @@ class UnitZaraza(loader.Module):
             return
 
         result = None
+        chat = [m.chat_id, m.id]
 
         if r := re.fullmatch(
-            r'(м|v)(?P<mutation>1|2|3|4|5|6|7|8|9|10|11|12|13|14|15)',
+            r'(м|v)(?P<mutation>1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20)',
                 text, re.ASCII
         ):
-            result = await self._send(m, f'/mutation@chatzarazabot {r.group("mutation")}')
-            self._history.append(
-                {
-                    'action': 'chg_m',
-                    'value': int(r.group("mutation")),
-                    'time': int(_time.time())
-                }
-            )
+            result = await self._send(m, f'мутация {r.group("mutation")}')
+            self._save_history(action='chg_m', value=r.group("mutation"), chat=chat)
 
         elif text in ('бк', ',r'):
-            result = await self._send(m, '/bank_all@chatzarazabot')
-            self._history.append({'action': 'b', 'time': int(_time.time())})
+            result = await self._send(m, '/bank_all')
+            self._save_history(action='b', chat=chat)
 
         elif text in ('уб', 'e,'):
-            result = await self._send(m, '/unbank_all@chatzarazabot')
-            self._history.append({'action': 'ub', 'time': int(_time.time())})
+            result = await self._send(m, '/unbank_all')
+            self._save_history(action='ub', chat=chat)
 
         elif text in ('рг', 'hu'):
-            result = await self._send(m, '/random_gen@chatzarazabot')
-            self._history.append({'action': 'rg', 'time': int(_time.time())})
+            result = await self._send(m, '/random_gen')
+            self._save_history(action='rg', chat=chat)
 
         return result
 
 
+    @staticmethod
+    def _just_dont(text: 'похуй, хоть бд ириса сюда передавай брат') -> str:
+        randint = random.SystemRandom().randint
+        out = ''
+
+        for _ in str(text):
+            w
+
+
     async def _send(self, m: Message, *a, **kw):
         m.out = False
-        result = await answer(m, *a, **kw)
+        result = await answer(m, *a, **{**{'link_preview': False}, **kw})
 
         async def delete():
             nonlocal m
@@ -105,3 +131,5 @@ class UnitZaraza(loader.Module):
         asyncio.ensure_future(delete())
 
         return result
+
+# реклама (охват - два еблана залезших в код): набор в улей тяжело @tohive
