@@ -1,4 +1,4 @@
-__version__ = (1, 4, 0)
+__version__ = (1, 5, 0)
 
 '''
     ███████╗███████╗████████╗██╗░█████╗░░██████╗░█████╗░███████╗
@@ -70,7 +70,7 @@ class UnitZaraza(loader.Module):
 
             self._history.append(
                 {
-                    **{'action': action, 'time': int(_time.time())},
+                    **{'action': action, 'time': _time.time()},
                     **data
                 }
             )
@@ -105,6 +105,10 @@ class UnitZaraza(loader.Module):
         elif text in ('рг', 'hu'):
             result = await self._send(m, '/random_gen')
             self._save_history(action='rg', chat=chat)
+
+        elif text in ('ми', 'vb'):
+            result = await self._send(m, '/me@chatzarazabot')
+            self._save_history(action='me', chat=chat)
 
         return result
 
