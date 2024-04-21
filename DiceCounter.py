@@ -40,6 +40,9 @@ class DiceCounter(loader.Module):
         )
         self._dices = []
     
+    async def client_ready(self):
+        await self.request_join('@zetxce', 'подпишись)', True)
+    
     async def watcher(self, m: Message):
         if not m.out:
             return
